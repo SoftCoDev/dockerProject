@@ -1,0 +1,68 @@
+version: '3.7'
+
+services:
+
+#PHP
+app:
+  build:
+    context:
+      dockerfile: Dockerfile
+
+  container_name: app
+  restart: unless-stopped
+  tty: true
+  working_dir: /var/www
+  volumes:
+    - ./:/var/www
+    - ./docker-files/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+
+  network:
+    - app-network
+
+#NGINX
+
+webserver:
+  image: nginx:alpine
+  container_name: webserver
+  restart: unless-stopped
+  tty: true
+  ports:
+    - "8090:80"
+    - "8091:443"
+
+  volumes:
+    - ./:/var/www
+    - ./docker-files/nginx/conf.d/:/etc/nginx/conf.d
+
+  network:
+    - app-network
+
+
+#MariaDB
+db:
+  image: mariadb:10.5.6
+  container_name: database
+  restart: unless-stopped
+  tty: true
+
+  ports:
+    - "3306:3306"
+
+  environment:
+    MYSQL_DATABASE: dockerTest
+    MYSQL_ROOT_PASSWORD: dockerTest
+
+  volumes:
+    - mariadbdata:/var/lib/mysql
+    - ./docker-files/mysql/my.cnf:/etc/mysql/my.cnf
+
+  networks:
+    - app-network
+
+  volumes:
+    mariadbdata:
+      driver: local
+
+  networks:
+    app-network:
+      driver: bridge
